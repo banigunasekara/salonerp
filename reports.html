@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EasyVeg | Enterprise Reports</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-slate-50 min-h-screen">
+
+    <div id="customerModal" class="fixed inset-0 z-[6000] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 md:p-6" style="display: none;">
+        <div class="bg-white w-full max-w-3xl rounded-[3rem] p-8 md:p-10 shadow-2xl overflow-y-auto max-h-[90vh] relative custom-scrollbar">
+            <button onclick="closeCustomerModal()" class="absolute top-6 right-6 w-12 h-12 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:text-red-500 hover:bg-red-50 transition-all z-10">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            <div class="mb-8 border-b border-slate-100 pb-4">
+                <h3 class="text-3xl font-black text-slate-900 tracking-tighter">Purchase History</h3>
+                <p id="modalCustomerName" class="text-emerald-600 font-bold uppercase tracking-widest text-xs mt-1">Loading...</p>
+            </div>
+            <div id="modalOrderList" class="space-y-4">
+                </div>
+        </div>
+    </div>
+
+    <div class="flex flex-col md:flex-row min-h-screen">
+        <aside class="w-full md:w-80 bg-white border-r border-slate-200 flex flex-col sticky top-0 h-screen">
+            <div class="p-8 border-b border-slate-100 text-center">
+                <img id="sideLogo" src="" alt="Logo" class="h-14 mx-auto mb-4 object-contain">
+                <h1 class="text-2xl font-black italic text-slate-900">EASYVEG <span class="text-emerald-600">PRO</span></h1>
+            </div>
+            <nav class="flex-1 p-6 space-y-2 overflow-y-auto custom-scrollbar">
+                <a href="admin.html" class="w-full flex items-center gap-3 p-4 bg-slate-900 text-white rounded-2xl font-black hover:bg-slate-800 transition shadow-lg mb-6">
+                    <i class="fa-solid fa-arrow-left"></i> BACK TO DASHBOARD
+                </a>
+
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-2">Audit Core</p>
+                <button onclick="switchTab('audit')" id="tab-audit" class="w-full text-left flex items-center gap-4 p-4 rounded-xl font-black transition bg-emerald-600 text-white shadow-md">
+                    <i class="fa-solid fa-file-invoice"></i> Sales & Invoices
+                </button>
+                <button onclick="switchTab('customers')" id="tab-customers" class="w-full text-left flex items-center gap-4 p-4 text-slate-500 font-bold hover:bg-slate-50 rounded-xl transition">
+                    <i class="fa-solid fa-users"></i> All Customers
+                </button>
+                <button onclick="switchTab('stock')" id="tab-stock" class="w-full text-left flex items-center gap-4 p-4 text-slate-500 font-bold hover:bg-slate-50 rounded-xl transition">
+                    <i class="fa-solid fa-boxes-stacked"></i> Live Stock List
+                </button>
+                <button onclick="switchTab('quote')" id="tab-quote" class="w-full text-left flex items-center gap-4 p-4 text-slate-500 font-bold hover:bg-slate-50 rounded-xl transition">
+                    <i class="fa-solid fa-file-signature"></i> Quotations
+                </button>
+
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-8 mb-2 px-2">External Modules</p>
+                <a href="finance.html" class="w-full text-left flex items-center gap-4 p-4 text-blue-600 bg-blue-50 font-black rounded-xl transition hover:bg-blue-100">
+                    <i class="fa-solid fa-scale-balanced"></i> P&L / Balance Sheet
+                </a>
+                <a href="planning.html" class="w-full text-left flex items-center gap-4 p-4 text-amber-600 bg-amber-50 font-black rounded-xl transition hover:bg-amber-100 mt-2">
+                    <i class="fa-solid fa-calendar-check"></i> Purchase Planning
+                </a>
+            </nav>
+        </aside>
+
+        <main class="flex-1 p-6 md:p-10 overflow-y-auto">
+            
+            <header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
+                <h2 class="text-4xl font-black text-slate-900 tracking-tight">Enterprise <span class="text-emerald-600">Audit</span></h2>
+                <div class="flex gap-2 bg-white p-2 rounded-2xl shadow-sm border border-slate-100">
+                    <input type="date" id="startD" class="p-2 border-none outline-none font-bold text-sm bg-transparent">
+                    <span class="font-black text-slate-300 pt-2">TO</span>
+                    <input type="date" id="endD" class="p-2 border-none outline-none font-bold text-sm bg-transparent">
+                    <button onclick="loadAllData()" class="bg-slate-900 text-white px-6 py-2 rounded-xl font-bold">LOAD</button>
+                </div>
+            </header>
+
+            <section id="sec-audit">
+                <div class="bg-white rounded-[2rem] shadow-xl border overflow-hidden">
+                    <div class="p-6 bg-slate-50 border-b flex justify-between items-center">
+                        <h3 class="font-black text-slate-700 uppercase text-xs tracking-widest">Transaction Log</h3>
+                        <button onclick="downloadExcel('salesTable', 'Sales_Audit')" class="bg-emerald-100 text-emerald-700 px-4 py-2 rounded-lg font-black text-[10px] hover:bg-emerald-200"><i class="fa-solid fa-file-excel"></i> EXCEL</button>
+                    </div>
+                    <table class="w-full text-left" id="salesTable">
+                        <thead class="bg-white text-[10px] font-black uppercase text-slate-400 border-b">
+                            <tr><th class="p-6">Customer</th><th>Amount</th><th>Status (Toggle)</th><th>Payment</th><th>Document</th></tr>
+                        </thead>
+                        <tbody id="salesBody" class="text-sm font-bold divide-y"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="sec-customers" class="hidden">
+                <div class="bg-white rounded-[2rem] shadow-xl border overflow-hidden">
+                    <div class="p-6 bg-slate-50 border-b flex justify-between items-center">
+                        <h3 class="font-black text-slate-700 uppercase text-xs tracking-widest">Customer Database</h3>
+                        <span class="text-[10px] font-bold text-slate-400 bg-white px-3 py-1 rounded-full border">Click Amount to View Cart Details</span>
+                    </div>
+                    <table class="w-full text-left" id="customerTable">
+                        <thead class="bg-white text-[10px] font-black uppercase text-slate-400 border-b">
+                            <tr><th class="p-6">Customer Name</th><th>Phone Number</th><th>Total Spent (Click to view)</th><th>Order Count</th></tr>
+                        </thead>
+                        <tbody id="customerBody" class="text-sm font-bold divide-y"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="sec-stock" class="hidden">
+                <div class="bg-white rounded-[2rem] shadow-xl border overflow-hidden">
+                    <div class="p-6 bg-slate-50 border-b flex justify-between items-center">
+                        <h3 class="font-black text-slate-700 uppercase text-xs tracking-widest">Available Stock & Value</h3>
+                        <button onclick="downloadExcel('stockTable', 'Stock_Sheet')" class="bg-emerald-100 text-emerald-700 px-4 py-2 rounded-lg font-black text-[10px]"><i class="fa-solid fa-file-excel"></i> EXCEL</button>
+                    </div>
+                    <table class="w-full text-left" id="stockTable">
+                        <thead class="bg-white text-[10px] font-black uppercase text-slate-400 border-b">
+                            <tr><th class="p-6">Product Item</th><th>Pricing Variants</th><th>Cost Price</th><th>Stock on Hand</th></tr>
+                        </thead>
+                        <tbody id="stockBody" class="text-sm font-bold divide-y"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="sec-quote" class="hidden">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="bg-white p-8 rounded-[2rem] shadow-xl border border-slate-100 space-y-4">
+                        <h3 class="font-black text-slate-800 mb-4">Add to Quote</h3>
+                        <select id="qProduct" class="w-full p-4 bg-slate-50 border rounded-xl font-bold outline-none"></select>
+                        <input type="number" id="qQty" placeholder="Quantity (kg)" class="w-full p-4 bg-slate-50 border rounded-xl font-bold outline-none">
+                        <button onclick="addQuote()" class="w-full bg-emerald-600 text-white p-4 rounded-xl font-black shadow-lg">ADD ITEM</button>
+                    </div>
+                    <div class="lg:col-span-2 bg-white rounded-[2rem] shadow-xl border overflow-hidden">
+                        <div class="p-6 bg-slate-900 text-white flex justify-between items-center">
+                            <div><p class="text-[10px] font-bold uppercase text-slate-400">Total Estimate</p><h3 id="qTotal" class="text-3xl font-black">Rs. 0</h3></div>
+                            <button onclick="downloadQuotePDF()" class="bg-white text-slate-900 px-6 py-3 rounded-xl font-black hover:bg-emerald-500 hover:text-white transition"><i class="fa-solid fa-file-pdf"></i> PRINT PDF</button>
+                        </div>
+                        <table class="w-full"><tbody id="quoteBody" class="divide-y font-bold text-sm"></tbody></table>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <script type="module">
+        import { db, APP_CONFIG } from './config.js';
+        import { collection, getDocs, doc, updateDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        document.getElementById('sideLogo').src = APP_CONFIG.business.logo;
+        document.getElementById('startD').valueAsDate = new Date(new Date().setDate(new Date().getDate() - 30));
+        document.getElementById('endD').valueAsDate = new Date();
+
+        let allProducts = [];
+        let quoteList = [];
+        let allOrders = []; 
+        window.globalCustomerMap = {}; // Expose globally for Modal
+
+        window.switchTab = (tab) => {
+            ['audit', 'customers', 'stock', 'quote'].forEach(t => {
+                document.getElementById(`sec-${t}`).style.display = 'none';
+                document.getElementById(`tab-${t}`).className = "w-full text-left flex items-center gap-4 p-4 text-slate-500 font-bold hover:bg-slate-50 rounded-xl transition";
+            });
+            document.getElementById(`sec-${tab}`).style.display = 'block';
+            document.getElementById(`tab-${tab}`).className = "w-full text-left flex items-center gap-4 p-4 rounded-xl font-black transition bg-emerald-600 text-white shadow-md";
+        };
+
+        window.loadAllData = async () => {
+            const start = new Date(document.getElementById('startD').value).getTime();
+            const end = new Date(document.getElementById('endD').value).setHours(23,59,59);
+            
+            // 1. Load Products (For Stock Tab & Quote)
+            const pSnap = await getDocs(collection(db, "products"));
+            allProducts = [];
+            let stockHtml = '';
+            let qHtml = '<option value="">Select Item...</option>';
+            pSnap.forEach(d => {
+                const p = d.data(); allProducts.push({id: d.id, ...p});
+                
+                // Inventory Logic mapped to Reports
+                let variantsStr = (p.variants || []).map(v => `${v.weight}: Rs.${v.price}`).join(' | ') || 'N/A';
+                let fallbackPrice = (p.variants && p.variants.length > 0) ? p.variants[0].price : 0;
+                
+                stockHtml += `<tr class="hover:bg-slate-50">
+                    <td class="p-6">${p.nameEn}</td>
+                    <td class="text-xs text-slate-500">${variantsStr}</td>
+                    <td>Rs. ${p.costPrice||0}</td>
+                    <td class="font-black text-emerald-600">${p.stock||0} Units/Kg</td>
+                </tr>`;
+                
+                qHtml += `<option value="${p.nameEn}">${p.nameEn} (Rs. ${fallbackPrice})</option>`;
+            });
+            document.getElementById('stockBody').innerHTML = stockHtml;
+            document.getElementById('qProduct').innerHTML = qHtml;
+
+            // 2. Load Orders (For Sales & Customers)
+            const oSnap = await getDocs(query(collection(db, "orders"), orderBy("timestamp", "desc")));
+            allOrders = [];
+            let salesHtml = '';
+            let customerMap = {};
+
+            oSnap.forEach(d => {
+                const o = d.data(); 
+                const ts = o.timestamp?.seconds * 1000;
+                if(ts >= start && ts <= end) {
+                    allOrders.push({ id: d.id, ...o }); 
+                    
+                    salesHtml += `<tr class="hover:bg-slate-50">
+                        <td class="p-6">${o.customerName} <br><span class="text-xs text-slate-400">${o.customerPhone}</span></td>
+                        <td class="text-slate-900 font-black">Rs. ${parseFloat(o.total||0).toLocaleString()}</td>
+                        <td><button onclick="toggleD('${d.id}', '${o.status}')" class="px-4 py-1 rounded-full text-[10px] font-black uppercase ${o.status==='Delivered'?'bg-emerald-100 text-emerald-700':'bg-amber-100 text-amber-700'}">${o.status||'Pending'}</button></td>
+                        <td><button onclick="toggleP('${d.id}', '${o.paymentStatus}')" class="px-4 py-1 rounded-full text-[10px] font-black uppercase ${o.paymentStatus==='Paid'?'bg-blue-100 text-blue-700':'bg-red-100 text-red-700'}">${o.paymentStatus||'Pending'}</button></td>
+                        <td><button onclick="downloadInvoicePDF('${d.id}')" class="bg-slate-900 text-white px-4 py-2 rounded-lg font-black text-[10px] hover:bg-emerald-500 transition shadow-md"><i class="fa-solid fa-file-pdf"></i> INVOICE</button></td>
+                    </tr>`;
+
+                    // Customer Aggregation (Including Order History Array)
+                    if(!customerMap[o.customerPhone]) {
+                        customerMap[o.customerPhone] = { name: o.customerName, spent: 0, orders: 0, history: [] };
+                    }
+                    customerMap[o.customerPhone].spent += parseFloat(o.total||0);
+                    customerMap[o.customerPhone].orders += 1;
+                    customerMap[o.customerPhone].history.push(o);
+                }
+            });
+            
+            document.getElementById('salesBody').innerHTML = salesHtml || '<tr><td colspan="5" class="p-6 text-center">No transactions.</td></tr>';
+            
+            // Customer Table Generation with Clickable Link
+            document.getElementById('customerBody').innerHTML = Object.keys(customerMap).map(phone => {
+                const c = customerMap[phone];
+                return `<tr class="hover:bg-slate-50 transition">
+                    <td class="p-6 font-bold text-slate-800">${c.name}</td>
+                    <td class="text-slate-500">${phone}</td>
+                    <td class="p-6">
+                        <button onclick="viewCustomerHistory('${phone}')" class="bg-emerald-50 text-emerald-700 px-4 py-2 rounded-xl font-black flex items-center gap-2 hover:bg-emerald-600 hover:text-white transition shadow-sm">
+                            Rs. ${c.spent.toLocaleString()} <i class="fa-solid fa-arrow-up-right-from-square text-xs opacity-50"></i>
+                        </button>
+                    </td>
+                    <td class="font-black text-slate-900">${c.orders}</td>
+                </tr>`;
+            }).join('');
+            
+            window.globalCustomerMap = customerMap;
+        };
+
+        // 🟢 NEW: Modal Controllers for Customer History
+        window.viewCustomerHistory = (phone) => {
+            const c = window.globalCustomerMap[phone];
+            if(!c) return;
+            
+            document.getElementById('modalCustomerName').innerText = `${c.name} | Mobile: ${phone}`;
+            
+            let historyHtml = c.history.map((o, idx) => {
+                let dateStr = o.timestamp ? new Date(o.timestamp.seconds*1000).toLocaleString() : 'N/A';
+                let itemsList = (o.items||[]).map(i => `<li class="flex justify-between py-1 border-b border-dashed border-slate-200 last:border-0"><span class="text-slate-600">${i.qty} x ${i.nameEn || i.name}</span> <span class="font-bold text-slate-800">Rs. ${i.subtotal||(i.price*i.qty)}</span></li>`).join('');
+                
+                return `<div class="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <span class="bg-slate-900 text-white px-2 py-1 rounded text-[10px] font-black mr-2">ORDER #${idx+1}</span>
+                            <span class="font-bold text-xs text-slate-500"><i class="fa-regular fa-clock"></i> ${dateStr}</span>
+                        </div>
+                        <span class="font-black text-emerald-600 text-lg">Total: Rs. ${o.total}</span>
+                    </div>
+                    <ul class="text-sm bg-white p-4 rounded-xl border">${itemsList}</ul>
+                </div>`;
+            }).join('');
+            
+            document.getElementById('modalOrderList').innerHTML = historyHtml;
+            document.getElementById('customerModal').style.display = 'flex';
+        };
+
+        window.closeCustomerModal = () => document.getElementById('customerModal').style.display = 'none';
+
+        // Toggles
+        window.toggleD = async (id, s) => { await updateDoc(doc(db,"orders",id), {status: s==='Delivered'?'Pending':'Delivered'}); loadAllData(); };
+        window.toggleP = async (id, s) => { await updateDoc(doc(db,"orders",id), {paymentStatus: s==='Paid'?'Pending':'Paid'}); loadAllData(); };
+
+        // Quotation Tools
+        window.addQuote = () => {
+            const name = document.getElementById('qProduct').value;
+            const qty = parseFloat(document.getElementById('qQty').value);
+            if(!name || !qty) return;
+            const p = allProducts.find(x => x.nameEn === name);
+            const fallbackPrice = (p.variants && p.variants.length > 0) ? p.variants[0].price : 0;
+            quoteList.push({name, price: fallbackPrice, qty, total: fallbackPrice * qty});
+            renderQuote();
+        };
+        function renderQuote() {
+            let t = 0;
+            document.getElementById('quoteBody').innerHTML = quoteList.map((i, idx) => { t+=i.total; return `<tr class="border-b"><td class="p-6">${i.name}</td><td class="text-center">${i.qty} kg</td><td class="text-right">Rs. ${i.total}</td><td class="p-6 text-right"><button onclick="quoteList.splice(${idx},1);renderQuote()" class="text-red-500 font-black"><i class="fa-solid fa-trash"></i></button></td></tr>`; }).join('');
+            document.getElementById('qTotal').innerText = `Rs. ${t.toLocaleString()}`;
+        }
+
+        // PDF Downloads
+        function addBrandingToPDF(doc) {
+            const logoEl = document.getElementById('sideLogo');
+            try { doc.addImage(logoEl, 'PNG', 14, 10, 25, 25); } catch(e) { }
+            doc.setFontSize(24); doc.setTextColor(15,23,42);
+            doc.text(APP_CONFIG.business.name.toUpperCase(), 45, 22);
+            doc.setFontSize(10); doc.setTextColor(100);
+            doc.text(APP_CONFIG.business.phone, 45, 28);
+        }
+
+        window.downloadInvoicePDF = (id) => {
+            const o = allOrders.find(x => x.id === id);
+            const doc = new window.jspdf.jsPDF();
+            addBrandingToPDF(doc);
+            
+            doc.setFontSize(16); doc.setTextColor(5,150,105); doc.text("OFFICIAL INVOICE", 140, 22);
+            doc.setFontSize(10); doc.setTextColor(100);
+            doc.text(`Invoice No: #${id.slice(-6).toUpperCase()}`, 140, 28);
+            doc.text(`Date: ${new Date(o.timestamp?.seconds * 1000).toLocaleString()}`, 140, 33);
+
+            doc.setTextColor(15,23,42); doc.setFontSize(12); doc.text("Bill To:", 14, 50);
+            doc.setFontSize(10); doc.text(`Name: ${o.customerName}\nPhone: ${o.customerPhone}`, 14, 56);
+
+            doc.autoTable({
+                startY: 70, head: [['Item Description', 'Qty', 'Amount']],
+                body: (o.items||[]).map(i => [i.nameEn||i.name, `${i.qty} units/kg`, `Rs. ${i.subtotal||(i.price*i.qty)}`]),
+                headStyles: { fillColor: [15,23,42] }
+            });
+
+            doc.setFontSize(14); doc.setTextColor(15,23,42);
+            doc.text(`GRAND TOTAL: Rs. ${parseFloat(o.total).toLocaleString()}`, 14, doc.lastAutoTable.finalY + 15);
+
+            doc.setFontSize(10); doc.setTextColor(100);
+            doc.text("Bank Account Details for Payment:", 14, doc.lastAutoTable.finalY + 30);
+            const bankLines = (APP_CONFIG.business.bankDetails || "").split('\n');
+            bankLines.forEach((line, i) => doc.text(line, 14, doc.lastAutoTable.finalY + 36 + (i*5)));
+
+            doc.save(`Invoice_${id.slice(-6)}.pdf`);
+        };
+
+        window.downloadQuotePDF = () => {
+            if(quoteList.length===0) return;
+            const doc = new window.jspdf.jsPDF();
+            addBrandingToPDF(doc);
+            doc.setFontSize(16); doc.setTextColor(5,150,105); doc.text("PRICE ESTIMATE / QUOTATION", 120, 22);
+            doc.autoTable({ startY: 45, head: [['Item', 'Unit Price', 'Quantity', 'Total']], body: quoteList.map(i=>[i.name, `Rs. ${i.price}`, `${i.qty} kg`, `Rs. ${i.total}`]), headStyles: { fillColor: [5,150,105] } });
+            doc.save("Quotation.pdf");
+        };
+
+        window.downloadExcel = (tableId, fileName) => {
+            const table = document.getElementById(tableId);
+            const wb = XLSX.utils.table_to_book(table);
+            XLSX.writeFile(wb, `${fileName}_${new Date().toISOString().split('T')[0]}.xlsx`);
+        };
+
+        loadAllData();
+        switchTab('audit');
+    </script>
+</body>
+</html>

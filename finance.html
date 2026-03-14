@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EasyVeg | Enterprise Finance Suite</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-slate-50 min-h-screen">
+
+    <img id="pdfLogo" src="" style="display:none;" />
+
+    <div class="flex flex-col md:flex-row min-h-screen">
+        <main class="flex-1 p-8 md:p-12 overflow-y-auto custom-scrollbar">
+            
+            <div class="flex justify-between items-center mb-8">
+                <a href="admin.html" class="inline-flex items-center gap-2 text-slate-500 font-bold hover:text-emerald-600 transition group">
+                    <div class="w-10 h-10 bg-white shadow-sm border rounded-full flex items-center justify-center group-hover:bg-emerald-50"><i class="fa-solid fa-arrow-left text-sm"></i></div>
+                    <span class="text-xs uppercase tracking-widest">Back to Dashboard</span>
+                </a>
+                <a href="reports.html" class="bg-slate-900 text-white px-6 py-2 rounded-xl font-bold text-xs hover:bg-emerald-600 transition shadow-md">Go to Reports Hub <i class="fa-solid fa-arrow-right ml-2"></i></a>
+            </div>
+
+            <header class="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-8 mb-12">
+                <div>
+                    <h2 class="text-4xl font-black text-slate-900 tracking-tighter">Finance <span class="text-emerald-600">Core</span></h2>
+                    <p class="text-slate-500 font-bold uppercase tracking-[0.2em] text-[10px] mt-2">P&L and Balance Sheet Integration</p>
+                </div>
+                <div class="flex items-center flex-wrap gap-3">
+                    <div class="flex items-center gap-2 bg-white p-2 rounded-[2rem] shadow-sm border border-slate-100">
+                        <input type="date" id="dateStart" class="p-2 bg-transparent outline-none font-bold text-sm text-slate-600">
+                        <span class="text-slate-300 font-black">TO</span>
+                        <input type="date" id="dateEnd" class="p-2 bg-transparent outline-none font-bold text-sm text-slate-600">
+                        <button onclick="calculateFinance()" class="bg-slate-900 text-white px-6 py-2 rounded-xl font-black text-xs hover:bg-emerald-600 transition shadow-lg uppercase">Analyze</button>
+                    </div>
+                    <button onclick="downloadFinancePDF()" class="bg-blue-50 text-blue-600 border border-blue-100 px-6 py-3.5 rounded-2xl font-black text-xs hover:bg-blue-600 hover:text-white transition shadow-sm flex items-center gap-2">
+                        <i class="fa-solid fa-file-pdf"></i> EXPORT REPORT
+                    </button>
+                </div>
+            </header>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-10">
+                <div class="lg:col-span-7 bg-white p-10 rounded-[3rem] shadow-xl border border-slate-100">
+                    <h3 class="text-xl font-black text-slate-800 mb-8 tracking-tight border-b pb-4">Master P&L Statement</h3>
+                    <table class="w-full text-left">
+                        <tbody class="divide-y divide-slate-100">
+                            <tr><td class="py-3 font-bold text-slate-600 text-sm">Gross Revenue (Paid)</td><td id="pl-revenue" class="py-3 font-black text-slate-900 text-right text-lg">Rs. 0</td></tr>
+                            <tr><td class="py-3 font-bold text-slate-600 text-sm">Product Cost</td><td id="pl-acquisition" class="py-3 font-bold text-slate-500 text-right">Rs. 0</td></tr>
+                            <tr><td class="py-3 font-bold text-slate-600 text-sm">Wastage Loss</td><td id="pl-wastage" class="py-3 font-bold text-orange-500 text-right">Rs. 0</td></tr>
+                            <tr class="bg-slate-50"><td class="py-4 px-4 font-black text-slate-800">GROSS PROFIT</td><td id="pl-gross" class="py-4 px-4 font-black text-blue-600 text-right text-xl">Rs. 0</td></tr>
+                            <tr><td class="py-3 font-bold text-slate-600 text-sm">OPEX (Expenses)</td><td id="pl-opex" class="py-3 font-bold text-red-500 text-right">- Rs. 0</td></tr>
+                            <tr><td class="py-3 font-bold text-slate-600 text-sm">CAPEX (Assets)</td><td id="pl-capex" class="py-3 font-bold text-red-500 text-right">- Rs. 0</td></tr>
+                            <tr class="border-t-4 border-slate-900"><td class="py-6 font-black text-slate-900 text-xl tracking-tighter">NET PROFIT</td><td id="pl-net-profit" class="py-6 font-black text-emerald-600 text-right text-3xl">Rs. 0</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="lg:col-span-5 bg-slate-900 p-10 rounded-[3rem] shadow-2xl text-white">
+                    <h3 class="text-xl font-black mb-2 tracking-tight">Log Expense</h3>
+                    <div class="space-y-4 mt-6">
+                        <select id="expType" class="w-full p-4 bg-slate-800 rounded-xl font-bold outline-none"><option value="OPEX">OPEX (Bills, Salaries)</option><option value="CAPEX">CAPEX (Equipment)</option></select>
+                        <input type="number" id="expAmount" placeholder="Amount (Rs.)" class="w-full p-4 bg-slate-800 rounded-xl font-black text-emerald-400 outline-none">
+                        <input type="text" id="expDesc" placeholder="Description" class="w-full p-4 bg-slate-800 rounded-xl font-bold outline-none">
+                        <button onclick="addExpense()" class="w-full bg-emerald-600 text-white py-4 rounded-xl font-black shadow-lg hover:bg-emerald-500 transition mt-2">SAVE EXPENSE</button>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-12 bg-white p-10 rounded-[3rem] shadow-xl border border-slate-100 mt-4">
+                    <div class="flex items-center gap-4 mb-8 border-b pb-4">
+                        <div class="bg-blue-100 p-3 rounded-xl"><i class="fa-solid fa-scale-balanced text-xl text-blue-600"></i></div>
+                        <h3 class="text-2xl font-black text-slate-900 tracking-tight">Balance Sheet <span class="text-sm text-slate-400 font-bold uppercase ml-2">(Current Snapshot)</span></h3>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+                        <div>
+                            <h4 class="text-emerald-600 font-black tracking-widest uppercase border-b-2 border-emerald-100 pb-2 mb-4">ASSETS</h4>
+                            <div class="flex justify-between mb-3 text-slate-600 font-bold"><span>Cash Equivalent (Net Profit)</span><span id="bs-cash">Rs. 0</span></div>
+                            <div class="flex justify-between mb-3 text-slate-600 font-bold"><span>Inventory Value (Unsold Stock)</span><span id="bs-inventory">Rs. 0</span></div>
+                            <div class="flex justify-between mb-3 text-slate-600 font-bold"><span>Capital Assets (CAPEX)</span><span id="bs-capex-asset">Rs. 0</span></div>
+                            <div class="flex justify-between font-black text-lg mt-6 bg-slate-50 p-4 rounded-xl"><span>Total Assets</span><span id="bs-total-assets" class="text-emerald-600">Rs. 0</span></div>
+                        </div>
+                        <div>
+                            <h4 class="text-rose-600 font-black tracking-widest uppercase border-b-2 border-rose-100 pb-2 mb-4">LIABILITIES & EQUITY</h4>
+                            <div class="flex justify-between mb-3 text-slate-600 font-bold"><span>Owner's Equity (Retained)</span><span id="bs-equity">Rs. 0</span></div>
+                            <div class="flex justify-between mb-3 text-slate-600 font-bold"><span>Pending Payables (Est)</span><span>Rs. 0</span></div>
+                            <div class="flex justify-between font-black text-lg mt-16 bg-slate-50 p-4 rounded-xl"><span>Total Liab. & Equity</span><span id="bs-total-liab" class="text-slate-900">Rs. 0</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module">
+        import { db, APP_CONFIG } from './config.js';
+        import { collection, getDocs, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        document.getElementById('dateStart').valueAsDate = new Date(new Date().setDate(new Date().getDate() - 30));
+        document.getElementById('dateEnd').valueAsDate = new Date();
+        document.getElementById('pdfLogo').src = APP_CONFIG.business.logo;
+
+        let productsMap = {};
+
+        async function initFinance() {
+            const pSnap = await getDocs(collection(db, "products"));
+            pSnap.forEach(d => { productsMap[d.id] = d.data(); });
+            await calculateFinance();
+        }
+
+        window.addExpense = async () => {
+            const type = document.getElementById('expType').value;
+            const amt = parseFloat(document.getElementById('expAmount').value);
+            const desc = document.getElementById('expDesc').value;
+            if(!amt || !desc) return;
+            await addDoc(collection(db, "expenses"), { type, amount: amt, description: desc, date: new Date().toISOString().split('T')[0], timestamp: serverTimestamp() });
+            document.getElementById('expAmount').value = ''; document.getElementById('expDesc').value = '';
+            calculateFinance();
+        };
+
+        window.calculateFinance = async () => {
+            const start = new Date(document.getElementById('dateStart').value).getTime();
+            const end = new Date(document.getElementById('dateEnd').value).setHours(23,59,59);
+
+            const oSnap = await getDocs(collection(db, "orders"));
+            let totalRev = 0, totalCost = 0, totalWaste = 0;
+
+            oSnap.forEach(doc => {
+                const o = doc.data(); const ts = o.timestamp?.seconds * 1000;
+                if(ts >= start && ts <= end && o.status !== 'Cancelled') {
+                    (o.items||[]).forEach(item => {
+                        const p = productsMap[item.id] || Object.values(productsMap).find(x=>x.nameEn===item.nameEn) || {};
+                        const itemCost = (p.costPrice||0) * (item.qty||1);
+                        totalCost += itemCost; totalWaste += itemCost * ((p.wastagePercentage||0)/100);
+                    });
+                    if (o.paymentStatus === 'Paid') totalRev += parseFloat(o.total||0);
+                }
+            });
+
+            let totalOpex = 0, totalCapex = 0;
+            const eSnap = await getDocs(collection(db, "expenses"));
+            eSnap.forEach(doc => {
+                const e = doc.data(); const eDate = new Date(e.date).getTime();
+                if(eDate >= start && eDate <= end) { e.type==='OPEX' ? totalOpex+=e.amount : totalCapex+=e.amount; }
+            });
+
+            const grossProfit = totalRev - totalCost - totalWaste;
+            const realNetProfit = grossProfit - totalOpex - totalCapex;
+
+            // P&L Update
+            document.getElementById('pl-revenue').innerText = `Rs. ${totalRev.toLocaleString()}`;
+            document.getElementById('pl-acquisition').innerText = `Rs. ${totalCost.toLocaleString()}`;
+            document.getElementById('pl-wastage').innerText = `Rs. ${totalWaste.toLocaleString()}`;
+            document.getElementById('pl-gross').innerText = `Rs. ${grossProfit.toLocaleString()}`;
+            document.getElementById('pl-opex').innerText = `- Rs. ${totalOpex.toLocaleString()}`;
+            document.getElementById('pl-capex').innerText = `- Rs. ${totalCapex.toLocaleString()}`;
+            document.getElementById('pl-net-profit').innerText = `Rs. ${realNetProfit.toLocaleString()}`;
+
+            // Balance Sheet Calculation
+            let inventoryValue = 0;
+            Object.values(productsMap).forEach(p => { inventoryValue += (p.costPrice||0) * (p.stock||0); });
+            const totalAssets = Math.max(0, realNetProfit) + inventoryValue + totalCapex; 
+
+            document.getElementById('bs-cash').innerText = `Rs. ${Math.max(0, realNetProfit).toLocaleString()}`;
+            document.getElementById('bs-inventory').innerText = `Rs. ${inventoryValue.toLocaleString()}`;
+            document.getElementById('bs-capex-asset').innerText = `Rs. ${totalCapex.toLocaleString()}`;
+            document.getElementById('bs-total-assets').innerText = `Rs. ${totalAssets.toLocaleString()}`;
+            
+            document.getElementById('bs-equity').innerText = `Rs. ${totalAssets.toLocaleString()}`;
+            document.getElementById('bs-total-liab').innerText = `Rs. ${totalAssets.toLocaleString()}`;
+        };
+
+        // 🟢 NEW: EXPORT FINANCE REPORT AS PDF
+        window.downloadFinancePDF = () => {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Header / Branding
+            try { doc.addImage(document.getElementById('pdfLogo'), 'PNG', 14, 10, 25, 25); } catch(e){}
+            doc.setFontSize(22); doc.setTextColor(15,23,42);
+            doc.text("FINANCIAL & AUDIT REPORT", 45, 22);
+            doc.setFontSize(10); doc.setTextColor(100);
+            doc.text(`Analysis Period: ${document.getElementById('dateStart').value} to ${document.getElementById('dateEnd').value}`, 45, 28);
+
+            // 1. P&L Table
+            const plData = [
+                ['Gross Revenue (Paid)', document.getElementById('pl-revenue').innerText],
+                ['Product Acquisition Cost', document.getElementById('pl-acquisition').innerText],
+                ['Wastage Loss Impact', document.getElementById('pl-wastage').innerText],
+                ['GROSS PROFIT', document.getElementById('pl-gross').innerText],
+                ['OPEX (Salaries, Rent, Utilities)', document.getElementById('pl-opex').innerText],
+                ['CAPEX (Equipment, Assets)', document.getElementById('pl-capex').innerText],
+                ['REAL NET PROFIT', document.getElementById('pl-net-profit').innerText]
+            ];
+
+            doc.autoTable({
+                startY: 40,
+                head: [['Profit & Loss Statement', 'Calculated Amount']],
+                body: plData,
+                theme: 'grid',
+                headStyles: { fillColor: [15, 23, 42] }, // Slate-900
+                willDrawCell: function(data) {
+                    // Highlight Gross and Net Profit rows
+                    if (data.section === 'body' && (data.row.index === 3 || data.row.index === 6)) {
+                        doc.setFont(undefined, 'bold');
+                        if(data.row.index === 6) doc.setTextColor(5, 150, 105); // Emerald for Net Profit
+                    }
+                }
+            });
+
+            // 2. Balance Sheet Table
+            const bsData = [
+                ['Cash Equivalent (Net Profit)', document.getElementById('bs-cash').innerText],
+                ['Inventory Value (Unsold Stock)', document.getElementById('bs-inventory').innerText],
+                ['Capital Assets (CAPEX)', document.getElementById('bs-capex-asset').innerText],
+                ['TOTAL ASSETS', document.getElementById('bs-total-assets').innerText],
+                ["Owner's Equity (Retained)", document.getElementById('bs-equity').innerText],
+                ['Pending Payables (Est)', 'Rs. 0'],
+                ['TOTAL LIABILITIES & EQUITY', document.getElementById('bs-total-liab').innerText]
+            ];
+
+            doc.autoTable({
+                startY: doc.lastAutoTable.finalY + 15,
+                head: [['Balance Sheet Snapshot', 'Valuation']],
+                body: bsData,
+                theme: 'grid',
+                headStyles: { fillColor: [37, 99, 235] }, // Blue-600
+                willDrawCell: function(data) {
+                    // Highlight Totals
+                    if (data.section === 'body' && (data.row.index === 3 || data.row.index === 6)) {
+                        doc.setFont(undefined, 'bold');
+                    }
+                }
+            });
+
+            doc.save(`Finance_Report_${document.getElementById('dateEnd').value}.pdf`);
+        };
+
+        initFinance();
+    </script>
+</body>
+</html>

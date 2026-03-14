@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Salon Unix | Enterprise Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="min-h-screen bg-[#f8fafc] font-medium">
+
+    <div id="loginOverlay" class="fixed inset-0 z-[2000] flex items-center justify-center bg-slate-900 px-6">
+        <div class="bg-white p-10 rounded-[3rem] shadow-2xl w-full max-w-md text-center border-t-8 border-indigo-600">
+            <h2 class="text-3xl font-black text-slate-900">Salon <span class="text-indigo-600">Admin</span></h2>
+            <p class="text-[10px] font-black uppercase text-slate-400 tracking-widest mt-1 mb-8">Secure Enterprise Login</p>
+            <div class="space-y-4">
+                <input type="email" id="adminEmail" placeholder="Email Address" class="w-full p-4 bg-slate-50 rounded-xl font-bold border focus:ring-2 ring-indigo-500 outline-none">
+                <input type="password" id="adminPass" placeholder="Security Key" class="w-full p-4 bg-slate-50 rounded-xl font-bold border focus:ring-2 ring-indigo-500 outline-none">
+                <button onclick="handleLogin()" id="loginBtn" class="w-full bg-slate-900 text-white p-4 rounded-xl font-black hover:bg-indigo-600 transition shadow-lg uppercase tracking-widest">Authorize Access</button>
+                <p id="loginError" class="text-rose-500 text-xs font-bold hidden">Access Denied. Check Credentials.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="flex flex-col md:flex-row min-h-screen">
+        <aside class="w-full md:w-80 bg-white border-r flex flex-col p-6 sticky top-0 h-screen z-40">
+            <div class="text-center mb-10 pb-6 border-b">
+                <h1 class="text-2xl font-black italic text-slate-900">SALON <span class="text-indigo-600">UNIX</span></h1>
+            </div>
+            <nav class="flex-1 space-y-3">
+                <a href="admin.html" class="flex items-center gap-4 p-5 rounded-2xl font-black transition bg-slate-900 text-white shadow-xl">
+                    <i class="fa-solid fa-gauge-high"></i> Dashboard
+                </a>
+                <a href="staff.html" class="flex items-center gap-4 p-5 text-slate-500 font-bold hover:bg-slate-50 rounded-2xl transition">
+                    <i class="fa-solid fa-user-tie"></i> Staff Profiles
+                </a>
+                <a href="inventory.html" class="flex items-center gap-4 p-5 text-slate-500 font-bold hover:bg-slate-50 rounded-2xl transition">
+                    <i class="fa-solid fa-bottle-droplet"></i> Inventory & Stock
+                </a>
+                <a href="reports.html" class="flex items-center gap-4 p-5 text-slate-500 font-bold hover:bg-slate-50 rounded-2xl transition">
+                    <i class="fa-solid fa-chart-line"></i> Audit Reports
+                </a>
+            </nav>
+            <button onclick="handleLogout()" class="w-full p-4 bg-rose-50 text-rose-600 rounded-2xl font-black hover:bg-rose-600 hover:text-white transition mt-auto flex items-center justify-center gap-3">
+                <i class="fa-solid fa-power-off"></i> LOG OUT
+            </button>
+        </aside>
+
+        <main class="flex-1 p-6 md:p-12 overflow-y-auto">
+            <header class="mb-12 flex justify-between items-end">
+                <div>
+                    <h2 class="text-4xl font-black text-slate-900 tracking-tight">Operation <span class="text-indigo-600">Center</span></h2>
+                    <p class="text-slate-400 font-bold uppercase tracking-[0.3em] text-[10px] mt-1">Live Salon Intelligence</p>
+                </div>
+            </header>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-indigo-50 relative overflow-hidden">
+                    <i class="fa-solid fa-calendar-check absolute -right-6 -top-6 text-indigo-50 text-9xl"></i>
+                    <div class="relative z-10">
+                        <p class="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-1">Today's Appointments</p>
+                        <h3 id="todayBookings" class="text-4xl font-black text-slate-900 tracking-tighter">0</h3>
+                    </div>
+                </div>
+                <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-emerald-50 relative overflow-hidden">
+                    <i class="fa-solid fa-money-bill-trend-up absolute -right-6 -top-6 text-emerald-50 text-9xl"></i>
+                    <div class="relative z-10">
+                        <p class="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1">Daily Revenue</p>
+                        <h3 id="todayRevenue" class="text-4xl font-black text-slate-900 tracking-tighter">Rs. 0</h3>
+                    </div>
+                </div>
+                <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-orange-50 relative overflow-hidden">
+                    <i class="fa-solid fa-box-open absolute -right-6 -top-6 text-orange-50 text-9xl"></i>
+                    <div class="relative z-10">
+                        <p class="text-[10px] font-black text-orange-600 uppercase tracking-widest mb-1">Low Stock Alerts</p>
+                        <h3 id="lowStock" class="text-4xl font-black text-slate-900 tracking-tighter">0</h3>
+                    </div>
+                </div>
+                <div class="bg-white p-8 rounded-[2.5rem] shadow-sm border border-purple-50 relative overflow-hidden">
+                    <i class="fa-solid fa-users absolute -right-6 -top-6 text-purple-50 text-9xl"></i>
+                    <div class="relative z-10">
+                        <p class="text-[10px] font-black text-purple-600 uppercase tracking-widest mb-1">Active Staff</p>
+                        <h3 id="totalStaff" class="text-4xl font-black text-slate-900 tracking-tighter">0</h3>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-[3rem] shadow-xl border overflow-hidden">
+                <div class="p-8 border-b bg-slate-50 flex justify-between items-center">
+                    <h3 class="text-xl font-black text-slate-800">Recent Service Activity</h3>
+                    <div class="flex items-center gap-2 text-[10px] font-black text-emerald-500 uppercase">
+                        <div class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div> Live Feed
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead class="bg-white text-[10px] font-black uppercase text-slate-400 border-b">
+                            <tr><th class="p-6">Client</th><th>Service/Product</th><th>Provider</th><th>Value</th><th>Status</th></tr>
+                        </thead>
+                        <tbody id="liveActivity" class="text-sm font-bold divide-y">
+                            <tr><td colspan="5" class="p-10 text-center text-slate-300">Syncing live data...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module">
+        import { auth, db, APP_CONFIG } from './config.js';
+        import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { collection, onSnapshot, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        onAuthStateChanged(auth, user => {
+            if (user) { 
+                document.getElementById('loginOverlay').style.display = 'none'; 
+                initializeIntelligence();
+            } else { 
+                document.getElementById('loginOverlay').style.display = 'flex'; 
+            }
+        });
+
+        window.handleLogin = async () => {
+            const btn = document.getElementById('loginBtn');
+            const err = document.getElementById('loginError');
+            btn.innerText = 'AUTHENTICATING...';
+            try { 
+                await signInWithEmailAndPassword(auth, document.getElementById('adminEmail').value, document.getElementById('adminPass').value); 
+            } catch(e) { 
+                err.classList.remove('hidden');
+                btn.innerText = 'AUTHORIZE ACCESS'; 
+            }
+        };
+
+        window.handleLogout = () => signOut(auth);
+
+        function initializeIntelligence() {
+            const today = new Date().toISOString().split('T')[0];
+
+            // Bookings & Revenue
+            onSnapshot(collection(db, "orders"), snap => {
+                let todayRev = 0;
+                let todayCount = 0;
+                let html = '';
+
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    const orderDate = d.date || (d.timestamp ? new Date(d.timestamp.seconds*1000).toISOString().split('T')[0] : '');
+                    
+                    if(orderDate === today) {
+                        todayRev += parseFloat(d.total || 0);
+                        todayCount++;
+                    }
+
+                    // Last 10 records for feed
+                    html += `
+                        <tr class="hover:bg-slate-50 transition">
+                            <td class="p-6">${d.customerName}<br><span class="text-[10px] text-slate-400">${d.customerPhone}</span></td>
+                            <td><span class="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-lg text-xs uppercase">${d.type || 'Service'}</span></td>
+                            <td class="text-slate-500">${d.staffName || 'Walk-in'}</td>
+                            <td class="font-black text-slate-900">Rs. ${d.total}</td>
+                            <td><span class="px-3 py-1 rounded-full text-[9px] font-black uppercase ${d.status === 'Delivered' || d.status === 'Completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">${d.status || 'Pending'}</span></td>
+                        </tr>
+                    `;
+                });
+
+                document.getElementById('todayRevenue').innerText = `Rs. ${todayRev.toLocaleString()}`;
+                document.getElementById('todayBookings').innerText = todayCount;
+                document.getElementById('liveActivity').innerHTML = html || '<tr><td colspan="5" class="p-10 text-center">No activity today.</td></tr>';
+            });
+
+            // Inventory Alerts
+            onSnapshot(collection(db, "products"), snap => {
+                let low = 0;
+                snap.forEach(d => { if((d.data().stock || 0) < 5) low++; });
+                document.getElementById('lowStock').innerText = low;
+            });
+
+            // Staff Count
+            onSnapshot(collection(db, "staff"), snap => {
+                document.getElementById('totalStaff').innerText = snap.size;
+            });
+        }
+    </script>
+</body>
+</html>
