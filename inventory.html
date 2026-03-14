@@ -6,113 +6,79 @@
     <title>Salon Unix | Enterprise Inventory</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-[#f8fafc] min-h-screen font-medium">
+<body class="bg-slate-50 min-h-screen">
 
     <div id="authGuard" class="fixed inset-0 z-[1100] bg-white flex flex-col items-center justify-center">
-        <div class="relative w-20 h-20 mb-6">
-            <div class="absolute inset-0 border-4 border-slate-100 rounded-full"></div>
-            <div class="absolute inset-0 border-4 border-indigo-600 rounded-full border-t-transparent animate-spin"></div>
-        </div>
-        <p class="text-slate-900 font-black tracking-widest text-sm uppercase">Loading Inventory System...</p>
+        <div class="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
     </div>
 
-    <div id="alertModal" class="fixed inset-0 z-[6000] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-6" style="display: none;">
-        <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl text-center border-t-4 border-indigo-500">
-            <div id="alertIcon" class="w-16 h-16 bg-indigo-50 text-indigo-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <i class="fa-solid fa-check text-2xl"></i>
-            </div>
-            <h3 id="alertTitle" class="text-xl font-black text-slate-900 mb-1">Success</h3>
-            <p id="alertMsg" class="text-slate-500 text-xs mb-6"></p>
-            <button onclick="closeAlertModal()" class="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-xs tracking-widest">CONTINUE</button>
-        </div>
-    </div>
-
-    <div id="inventoryApp" class="flex flex-col md:flex-row min-h-screen" style="display:none;">
-        <aside class="w-full md:w-80 bg-white border-r flex flex-col sticky top-0 h-screen z-40 p-6">
+    <div class="flex flex-col md:flex-row min-h-screen" id="app" style="display:none;">
+        <aside class="w-full md:w-80 bg-white border-r p-6 sticky top-0 h-screen overflow-y-auto">
             <h1 class="text-2xl font-black italic text-slate-900 mb-10">SALON <span class="text-indigo-600">UNIX</span></h1>
-            <nav class="flex-1 space-y-3">
-                <a href="admin.html" class="flex items-center gap-3 p-4 bg-slate-900 text-white rounded-2xl font-black shadow-lg">
+            <nav class="space-y-3">
+                <a href="admin.html" class="flex items-center gap-3 p-4 bg-slate-900 text-white rounded-2xl font-black">
                     <i class="fa-solid fa-arrow-left"></i> DASHBOARD
                 </a>
+                <button onclick="openModal()" class="w-full flex items-center gap-3 p-4 bg-indigo-600 text-white rounded-2xl font-black shadow-lg">
+                    <i class="fa-solid fa-plus"></i> ADD NEW ITEM
+                </button>
             </nav>
         </aside>
 
-        <main class="flex-grow p-6 md:p-10 lg:p-14 overflow-y-auto">
-            <header class="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-8 mb-12">
-                <div>
-                    <h2 class="text-4xl font-black text-slate-900 tracking-tight">Stock & <span class="text-indigo-600">Services</span></h2>
-                    <p class="text-slate-500 font-bold text-sm uppercase tracking-[0.4em]">Manage Salon Assets</p>
-                </div>
-                <button onclick="openModal()" class="bg-indigo-600 text-white px-8 py-5 rounded-2xl font-black shadow-lg hover:bg-indigo-500 transition">
-                    <i class="fa-solid fa-plus mr-2"></i> ADD ITEM
-                </button>
-            </header>
-
-            <!-- Bulk Update Tool -->
-            <div class="bg-white p-8 rounded-[3rem] shadow-lg mb-10 border">
-                <h3 class="text-xl font-black text-slate-800 mb-2">Smart Bulk Importer</h3>
-                <p class="text-xs text-slate-400 mb-6">Paste tab-separated data here. If the item name is new, it will be automatically created.</p>
-                <textarea id="bulkPasteArea" class="w-full h-40 bg-slate-50 border-2 border-dashed rounded-2xl p-4 font-mono text-xs outline-none" placeholder="Name	Cost	Waste	Variants(e.g. 250ml:3200)"></textarea>
-                <button onclick="processBulkUpdate()" class="mt-4 bg-indigo-600 text-white py-4 px-10 rounded-2xl font-black shadow-xl hover:bg-indigo-700 transition">START BULK UPLOAD</button>
-            </div>
-
+        <main class="flex-grow p-6 md:p-12 overflow-y-auto">
+            <h2 class="text-4xl font-black text-slate-900 mb-12">Stock <span class="text-indigo-600">Master</span></h2>
             <div class="bg-white rounded-[3rem] shadow-xl border overflow-hidden">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left">
-                        <thead class="bg-slate-50 border-b">
-                            <tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                <th class="p-10">Item Details</th>
-                                <th class="p-10">Variants & Pricing</th>
-                                <th class="p-10">Stock</th>
-                                <th class="p-10 text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="inventoryList" class="divide-y font-semibold"></tbody>
-                    </table>
-                </div>
+                <table class="w-full text-left">
+                    <thead class="bg-slate-50 border-b text-[10px] font-black uppercase text-slate-400">
+                        <tr><th class="p-10">Item Details</th><th>Pricing</th><th>Stock</th><th class="text-right p-10">Actions</th></tr>
+                    </thead>
+                    <tbody id="inventoryList" class="divide-y font-bold text-sm"></tbody>
+                </table>
             </div>
         </main>
     </div>
 
-    <!-- Add/Edit Modal -->
-    <div id="itemModal" class="fixed inset-0 z-[5000] bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-6" style="display: none;">
-        <div class="bg-white w-full max-w-4xl rounded-[4rem] p-12 shadow-2xl relative">
-            <button onclick="closeModal()" class="absolute top-8 right-8 text-slate-400 hover:text-red-500"><i class="fa-solid fa-xmark text-2xl"></i></button>
-            <h3 id="modalTitle" class="text-3xl font-black mb-8">Manage Item</h3>
-            <form id="itemForm" class="grid grid-cols-2 gap-8">
+    <!-- Modal for Add/Edit -->
+    <div id="itemModal" class="fixed inset-0 z-[5000] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-6" style="display: none;">
+        <div class="bg-white w-full max-w-3xl rounded-[3rem] p-10 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <button onclick="closeModal()" class="absolute top-8 right-8 text-slate-400"><i class="fa-solid fa-xmark text-2xl"></i></button>
+            <h3 id="modalTitle" class="text-3xl font-black mb-8">Manage Salon Asset</h3>
+            
+            <form id="itemForm" class="grid grid-cols-2 gap-6">
                 <input type="hidden" id="editId">
-                <div class="col-span-2 md:col-span-1 space-y-4">
-                    <label class="text-xs font-black text-slate-400 uppercase">Item Name (English)</label>
-                    <input type="text" id="nameEn" class="w-full p-4 bg-slate-50 rounded-2xl border-none ring-1 ring-slate-200 outline-none font-bold" required>
+                <div class="col-span-2 flex justify-center mb-4">
+                    <div onclick="document.getElementById('itemImgInput').click()" class="w-40 h-40 bg-slate-100 rounded-[2.5rem] border-4 border-dashed border-slate-200 flex items-center justify-center cursor-pointer overflow-hidden relative">
+                        <img id="itemPreview" class="hidden absolute inset-0 w-full h-full object-cover">
+                        <i id="uploadIcon" class="fa-solid fa-cloud-arrow-up text-3xl text-slate-300"></i>
+                    </div>
+                    <input type="file" id="itemImgInput" class="hidden" accept="image/*" onchange="previewImage(this)">
                 </div>
-                <div class="col-span-2 md:col-span-1 space-y-4">
-                    <label class="text-xs font-black text-slate-400 uppercase">Category</label>
-                    <select id="category" class="w-full p-4 bg-slate-50 rounded-2xl border-none ring-1 ring-slate-200 outline-none font-bold">
-                        <option>Products</option>
-                        <option>Hair Care</option>
-                        <option>Skin Care</option>
-                        <option>Nail Art</option>
-                        <option>Bridal</option>
-                        <option>Facial</option>
-                        <option>Massage</option>
+
+                <div class="col-span-2 md:col-span-1">
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Item Name</label>
+                    <input type="text" id="nameEn" class="w-full p-4 bg-slate-50 rounded-xl border outline-none font-bold" required>
+                </div>
+                <div class="col-span-2 md:col-span-1">
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Category</label>
+                    <select id="category" class="w-full p-4 bg-slate-50 rounded-xl border outline-none font-bold">
+                        <option>Products</option><option>Hair Care</option><option>Skin Care</option><option>Facial</option><option>Bridal</option>
                     </select>
                 </div>
-                <div class="col-span-1 space-y-4">
-                    <label class="text-xs font-black text-slate-400 uppercase">Cost Price</label>
-                    <input type="number" id="cost" class="w-full p-4 bg-slate-50 rounded-2xl border-none ring-1 ring-slate-200 outline-none font-bold" required>
+                <div class="col-span-1">
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Cost Price</label>
+                    <input type="number" id="cost" class="w-full p-4 bg-slate-50 rounded-xl border outline-none font-bold" required>
                 </div>
-                <div class="col-span-1 space-y-4">
-                    <label class="text-xs font-black text-slate-400 uppercase">Current Stock</label>
-                    <input type="number" id="stockQty" class="w-full p-4 bg-slate-50 rounded-2xl border-none ring-1 ring-slate-200 outline-none font-bold" value="0">
+                <div class="col-span-1">
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Initial Stock</label>
+                    <input type="number" id="stock" class="w-full p-4 bg-slate-50 rounded-xl border outline-none font-bold" value="0">
                 </div>
                 <div class="col-span-2">
-                    <label class="text-xs font-black text-slate-400 uppercase">Pricing Variants (e.g. 250ml:3200,500ml:5800)</label>
-                    <input type="text" id="variantString" class="w-full p-4 bg-slate-50 rounded-2xl border-none ring-1 ring-slate-200 outline-none font-bold" placeholder="Size:Price, Size:Price">
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Variants (Format: Size:Price, e.g. 100ml:2500)</label>
+                    <input type="text" id="variants" class="w-full p-4 bg-slate-50 rounded-xl border outline-none font-bold" placeholder="Normal:1500">
                 </div>
-                <button type="submit" class="col-span-2 bg-indigo-600 text-white p-5 rounded-2xl font-black shadow-xl hover:bg-indigo-700 transition">SAVE TO DATABASE</button>
+                <button type="submit" id="saveBtn" class="col-span-2 bg-indigo-600 text-white p-5 rounded-2xl font-black shadow-xl hover:bg-indigo-700 transition">SAVE ITEM</button>
             </form>
         </div>
     </div>
@@ -120,144 +86,122 @@
     <script type="module">
         import { auth, db, APP_CONFIG } from './config.js';
         import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { collection, getDocs, doc, setDoc, updateDoc, deleteDoc, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { collection, onSnapshot, doc, setDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        let masterInventory = [];
+        let inventory = [];
+        let base64Img = "";
 
         onAuthStateChanged(auth, user => {
-            if (user) {
+            if(user) {
                 document.getElementById('authGuard').style.display = 'none';
-                document.getElementById('inventoryApp').style.display = 'flex';
-                syncData();
+                document.getElementById('app').style.display = 'flex';
+                loadData();
             } else { window.location.href = "admin.html"; }
         });
 
-        async function syncData() {
-            const snap = await getDocs(collection(db, "products"));
-            masterInventory = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-            renderTable();
+        function loadData() {
+            onSnapshot(collection(db, "products"), snap => {
+                inventory = snap.docs.map(d => ({id: d.id, ...d.data()}));
+                renderTable();
+            });
         }
 
         function renderTable() {
             const list = document.getElementById('inventoryList');
-            list.innerHTML = masterInventory.map(p => `
+            list.innerHTML = inventory.map(p => `
                 <tr class="hover:bg-slate-50 transition">
                     <td class="p-10">
-                        <p class="text-lg font-black text-slate-900">${p.nameEn}</p>
-                        <span class="text-[9px] font-black bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-lg uppercase tracking-widest">${p.category || 'General'}</span>
-                    </td>
-                    <td class="p-10">
-                        <div class="space-y-1">
-                            ${(p.variants || []).map(v => `<div class="text-xs font-bold text-slate-500">${v.weight}: <span class="text-slate-900">Rs. ${v.price}</span></div>`).join('')}
+                        <div class="flex items-center gap-4">
+                            <img src="${p.imageUrl || 'https://via.placeholder.com/60'}" class="w-12 h-12 rounded-xl object-cover">
+                            <div><p class="font-black">${p.nameEn}</p><p class="text-[10px] text-slate-400 uppercase">${p.category}</p></div>
                         </div>
                     </td>
-                    <td class="p-10 font-black text-slate-900">${p.stock || 0}</td>
+                    <td>${(p.variants || []).map(v => `<p class="text-xs">${v.weight}: Rs.${v.price}</p>`).join('')}</td>
+                    <td class="font-black">${p.stock || 0}</td>
                     <td class="p-10 text-right">
-                        <button onclick="editItem('${p.id}')" class="text-indigo-600 hover:scale-110 transition p-2"><i class="fa-solid fa-pen"></i></button>
-                        <button onclick="deleteItem('${p.id}')" class="text-rose-500 hover:scale-110 transition p-2 ml-2"><i class="fa-solid fa-trash"></i></button>
+                        <button onclick="editItem('${p.id}')" class="text-indigo-600 p-2"><i class="fa-solid fa-pen"></i></button>
+                        <button onclick="deleteItem('${p.id}')" class="text-rose-500 p-2 ml-2"><i class="fa-solid fa-trash"></i></button>
                     </td>
-                </tr>
-            `).join('');
+                </tr>`).join('');
         }
 
-        window.processBulkUpdate = async () => {
-            const pasteData = document.getElementById('bulkPasteArea').value.trim();
-            if (!pasteData) return;
-            const rows = pasteData.split('\n').map(r => r.split('\t'));
-            
-            const batch = writeBatch(db);
-            let processed = 0;
-
-            for(const cols of rows) {
-                const name = (cols[0] || '').trim();
-                if(!name) continue;
-
-                // පවතින භාණ්ඩයක්ද කියා පරීක්ෂා කිරීම
-                let product = masterInventory.find(p => p.nameEn.toLowerCase() === name.toLowerCase());
-                const ref = product ? doc(db, "products", product.id) : doc(collection(db, "products"));
-                
-                const variantParts = (cols[3] || '').split(',').map(v => {
-                    const [w, p] = v.split(':');
-                    return { weight: (w || "Unit").trim(), price: parseFloat(p) || 0 };
-                });
-
-                const data = {
-                    nameEn: name,
-                    costPrice: parseFloat(cols[1]) || 0,
-                    wastagePercentage: parseFloat(cols[2]) || 0,
-                    variants: variantParts,
-                    stock: product ? (product.stock || 0) : 0,
-                    category: product ? (product.category || "Products") : (variantParts.length > 0 ? "Products" : "Services"),
-                    isVisible: true,
-                    lastModified: serverTimestamp()
-                };
-
-                batch.set(ref, data, { merge: true });
-                processed++;
-            }
-
-            try {
-                await batch.commit();
-                await syncData();
-                document.getElementById('bulkPasteArea').value = '';
-                showAlert("Batch Processed", `${processed} items have been added/updated successfully.`);
-            } catch(e) { showAlert("Error", e.message, "error"); }
+        window.previewImage = (input) => {
+            const reader = new FileReader();
+            reader.onload = e => {
+                document.getElementById('itemPreview').src = e.target.result;
+                document.getElementById('itemPreview').classList.remove('hidden');
+                document.getElementById('uploadIcon').classList.add('hidden');
+                base64Img = e.target.result;
+            };
+            reader.readAsDataURL(input.files[0]);
         };
 
-        window.editItem = (id) => {
-            const p = masterInventory.find(x => x.id === id);
-            document.getElementById('editId').value = p.id;
-            document.getElementById('nameEn').value = p.nameEn;
-            document.getElementById('category').value = p.category || 'Products';
-            document.getElementById('cost').value = p.costPrice;
-            document.getElementById('stockQty').value = p.stock || 0;
-            document.getElementById('variantString').value = (p.variants || []).map(v => `${v.weight}:${v.price}`).join(',');
-            document.getElementById('itemModal').style.display = 'flex';
-        };
-
-        window.deleteItem = async (id) => {
-            if(confirm("Delete this item?")) {
-                await deleteDoc(doc(db, "products", id));
-                syncData();
-            }
-        };
-
-        window.showAlert = (title, msg, type = "success") => {
-            document.getElementById('alertTitle').innerText = title;
-            document.getElementById('alertMsg').innerText = msg;
-            document.getElementById('alertModal').style.display = 'flex';
-        };
-
-        window.closeAlertModal = () => document.getElementById('alertModal').style.display = 'none';
-        window.openModal = () => {
-            document.getElementById('itemForm').reset();
-            document.getElementById('editId').value = '';
-            document.getElementById('itemModal').style.display = 'flex';
-        };
-        window.closeModal = () => document.getElementById('itemModal').style.display = 'none';
+        async function uploadToImgBB(b64) {
+            const fd = new FormData();
+            fd.append("image", b64.split(',')[1]);
+            const res = await fetch(`https://api.imgbb.com/1/upload?key=${APP_CONFIG.imgbbKey}`, { method: 'POST', body: fd });
+            const data = await res.json();
+            return data.data.url;
+        }
 
         document.getElementById('itemForm').onsubmit = async (e) => {
             e.preventDefault();
+            const btn = document.getElementById('saveBtn');
+            btn.disabled = true; btn.innerText = "UPLOADING...";
+
             const id = document.getElementById('editId').value || doc(collection(db, "products")).id;
-            const vString = document.getElementById('variantString').value;
-            const variants = vString.split(',').map(v => {
+            let finalUrl = inventory.find(x => x.id === id)?.imageUrl || "";
+
+            if(base64Img) finalUrl = await uploadToImgBB(base64Img);
+
+            const vars = document.getElementById('variants').value.split(',').map(v => {
                 const [w, p] = v.split(':');
-                return { weight: w.trim(), price: parseFloat(p) || 0 };
+                return { weight: (w || 'Unit').trim(), price: parseFloat(p) || 0 };
             });
 
             await setDoc(doc(db, "products", id), {
                 nameEn: document.getElementById('nameEn').value,
                 category: document.getElementById('category').value,
                 costPrice: parseFloat(document.getElementById('cost').value),
-                stock: parseFloat(document.getElementById('stockQty').value),
-                variants: variants,
-                isVisible: true
+                stock: parseFloat(document.getElementById('stock').value),
+                variants: vars,
+                imageUrl: finalUrl,
+                lastUpdated: serverTimestamp()
             }, { merge: true });
 
             closeModal();
-            syncData();
+            btn.disabled = false; btn.innerText = "SAVE ITEM";
         };
 
+        window.openModal = () => {
+            document.getElementById('itemForm').reset();
+            document.getElementById('editId').value = '';
+            document.getElementById('itemPreview').classList.add('hidden');
+            document.getElementById('uploadIcon').classList.remove('hidden');
+            document.getElementById('itemModal').style.display = 'flex';
+        };
+
+        window.closeModal = () => document.getElementById('itemModal').style.display = 'none';
+
+        window.editItem = (id) => {
+            const p = inventory.find(x => x.id === id);
+            document.getElementById('editId').value = p.id;
+            document.getElementById('nameEn').value = p.nameEn;
+            document.getElementById('category').value = p.category;
+            document.getElementById('cost').value = p.costPrice;
+            document.getElementById('stock').value = p.stock || 0;
+            document.getElementById('variants').value = (p.variants || []).map(v => `${v.weight}:${v.price}`).join(',');
+            if(p.imageUrl) {
+                document.getElementById('itemPreview').src = p.imageUrl;
+                document.getElementById('itemPreview').classList.remove('hidden');
+                document.getElementById('uploadIcon').classList.add('hidden');
+            }
+            document.getElementById('itemModal').style.display = 'flex';
+        };
+
+        window.deleteItem = async (id) => {
+            if(confirm("Delete this item?")) await deleteDoc(doc(db, "products", id));
+        };
     </script>
 </body>
 </html>
